@@ -75,7 +75,7 @@ from PIL import Image, ImageDraw, ImageFont
 # ═══════════════════════════════════════════════════════════
 #  CONFIG  — ដូរតម្លៃទាំងនេះ
 # ═══════════════════════════════════════════════════════════
-BOT_TOKEN          = "8614674554:AAF246KjPn9yPLEW4RQsJncS5MSRcje0qBY"
+BOT_TOKEN          = "8635907476:AAEMUF65TTPCPwgVo0IGLKmUKO1RMZb2b1s"
 ADMIN_ID           = 8807182741
 
 # Bakong KHQR (ដាក់ Token ពេញលេញពីអ៊ីមែលរបស់អ្នក)
@@ -108,7 +108,6 @@ SMM_SVC_FILE    = "aio_smm_services.json"
 SMM_ORD_FILE    = "aio_smm_orders.json"
 SMM_PROFIT_FILE = "aio_smm_profit.json"
 SMM_POLL_FILE   = "aio_smm_poll.json"
-LIVECHAT_FILE   = "aio_livechat.json"     # Live Chat Mapping File
 
 def _load(path, default):
     try:
@@ -133,7 +132,6 @@ orders          = _load(ORDERS_FILE,    {})
 stock           = _load(STOCK_FILE,     {})
 store_deps      = _load(STORE_DEP_FILE, {})
 seen_txn        = set(_load(SEEN_TXN_FILE, []))
-livechat_sessions = _load(LIVECHAT_FILE, {}) # admin_msg_id -> user_uid
 
 smm_api         = _load(SMM_API_FILE,   {"url": "", "key": ""})
 smm_services    = _load(SMM_SVC_FILE,   {})
@@ -143,7 +141,6 @@ smm_poll        = _load(SMM_POLL_FILE,  {"interval": POLL_INTERVAL})
 
 waiting         = {}   # uid -> step/dict
 lang_cooldown   = {}
-livechat_users  = set() # uid set of users currently in live chat mode
 
 # Default products including Mobile Legends, Free Fire KH/SG, Roblox, and PUBG Mobile
 if not products:
@@ -252,10 +249,10 @@ STRINGS = {
             "4️⃣ ចុច <b>📊 សេវាកម្ម SMM</b> → Platform → សេវា → ចំនួន → ផ្ញើ Link[cite: 1]"
         ),
         "support_msg": (
-            "💬 <b>Live Chat (ជជែកផ្ទាល់ជាមួយ Admin)</b>\n"
+            "💬 <b>ជំនួយ Support / ទំនាក់ទំនង Admin</b>\n"
             "━━━━━━━━━━━━━━━━━━\n"
-            "💬 សូមផ្ញើសារ ឬបញ្ហាដែលអ្នកចង់សួរមកទីនេះបាន Admin នឹងតបតទៅវិញក្នុងពេលឆាប់ៗនេះ!\n"
-            "👇 (ដើម្បីចាកចេញ សូមចុចប៊ូតុង Menu ខាងក្រោម)"
+            "💬 ប្រសិនបើអ្នកមានបញ្ហា ឬចង់សាកសួរព័ត៌មានផ្សេងៗ សូមទាក់ទងមកកាន់ Telegram ផ្ទាល់របស់ Admin បាន៖\n"
+            "👉 <b>@KhmerSmm005</b>"
         ),
         "fallback": "❓ ប្រើ Menu ខាងក្រោម",
     },
@@ -295,10 +292,10 @@ STRINGS = {
             "4️⃣ Tap <b>📊 SMM Services</b> → Platform → Service → Qty → Send Link[cite: 1]"
         ),
         "support_msg": (
-            "💬 <b>Live Chat with Admin</b>\n"
+            "💬 <b>Support / Contact Admin</b>\n"
             "━━━━━━━━━━━━━━━━━━\n"
-            "💬 Please send your message or question here, and an admin will reply to you shortly!\n"
-            "👇 (To exit, click the Menu button below)"
+            "💬 If you have any issues or questions, please contact the admin directly via Telegram:\n"
+            "👉 <b>@KhmerSmm005</b>"
         ),
         "fallback": "❓ Use the menu below",
     },
@@ -459,12 +456,11 @@ def smm_qty_kb(slug, s):
         "watch":"👀","reaction":"😍",
     }
     sr   = _smm_sell_rate(s["cost_rate"], slug)
-    mn   = max(500, s.get("min", 500))  # កំណត់ចំនួនអប្បបរមាស្វ័យប្រវត្តិយ៉ាងតិច 500
+    mn   = max(500, s.get("min", 500))
     mx   = s.get("max", 100000)
     label= s.get("label", slug)
     first= label.split()[0] if label else slug
     
-    # កំណត់កម្រិតចំនួន (Presets) ចាប់ពី 500 ឡើងទៅ
     suggestions = [500, 1000, 2500, 5000, 10000, 50000]
     qtys = []
     for q in [mn] + suggestions:
@@ -925,7 +921,6 @@ def is_banned(uid):
 def cmd_start(message):
     uid = message.chat.id
     waiting.pop(uid, None)
-    livechat_users.discard(uid)
     _track_user(message)
     if is_banned(uid):
         bot.send_message(uid, t(uid, "banned")); return
@@ -1689,7 +1684,6 @@ def cb_back(call):
     bot.answer_callback_query(call.id)
     dest = call.data[5:]
     waiting.pop(uid, None)
-    livechat_users.discard(uid)
     if dest == "main":
         _show_welcome(uid)
     elif dest == "shop":
@@ -1765,53 +1759,8 @@ def handle(message):
 
     if text in ("✕ Cancel", "❌ Cancel", "❌ បោះបង់"):
         waiting.pop(uid, None)
-        livechat_users.discard(uid)
         kb = admin_kb() if uid == ADMIN_ID else main_kb(uid)
         bot.send_message(uid, t(uid, "cancel_ok"), reply_markup=kb); return
-
-    # ══════════════════════════════════════════════════════
-    #  LIVE CHAT: ADMIN REPLY (Replying to user messages)
-    # ══════════════════════════════════════════════════════
-    if uid == ADMIN_ID and message.reply_to_message:
-        replied_id = message.reply_to_message.message_id
-        target_uid = livechat_sessions.get(str(replied_id))
-        if target_uid:
-            try:
-                bot.copy_message(chat_id=int(target_uid), from_chat_id=ADMIN_ID, message_id=message.message_id)
-                bot.message_reaction(ADMIN_ID, message.message_id, reaction=[{"type": "emoji", "emoji": "👍"}])
-            except Exception as e:
-                bot.send_message(ADMIN_ID, f"❌ បញ្ជូនសារមិនទាន់បានទេ: {e}")
-            return
-
-    # ══════════════════════════════════════════════════════
-    #  LIVE CHAT: USER SENDING MESSAGE TO ADMIN
-    # ══════════════════════════════════════════════════════
-    if uid in livechat_users and uid != ADMIN_ID:
-        if text in ("🏠 ត្រឡប់ Menu ដើម", "🏠 Back to Menu", "🏠 Menu"):
-            livechat_users.discard(uid)
-            _show_welcome(uid)
-            return
-        
-        try:
-            user_info = users_db.get(uid_str, {})
-            name = user_info.get("name", "User")
-            username = f"@{user_info['username']}" if user_info.get("username") else "No Username"
-            
-            header = f"💬 <b>Live Chat Message</b>\n👤 <b>{name}</b> ({username})\n🆔 <code>{uid}</code>\n━━━━━━━━━━━━━━━━━━\n"
-            
-            if message.content_type == "text":
-                sent_admin_msg = bot.send_message(ADMIN_ID, header + message.text, parse_mode="HTML")
-            else:
-                bot.send_message(ADMIN_ID, header, parse_mode="HTML")
-                sent_admin_msg = bot.copy_message(chat_id=ADMIN_ID, from_chat_id=uid, message_id=message.message_id)
-            
-            livechat_sessions[str(sent_admin_msg.message_id)] = uid_str
-            _save(LIVECHAT_FILE, livechat_sessions)
-            
-            bot.message_reaction(uid, message.message_id, reaction=[{"type": "emoji", "emoji": "✍️"}])
-        except Exception as e:
-            logger.error(f"{CLR_RED}LiveChat error: {e}{CLR_RESET}")
-        return
 
     # ══════════════════════════════════════════════════════
     #  ADMIN SECTION
@@ -2613,20 +2562,17 @@ def handle(message):
         return
 
     if text in ("🛍️ Shop", "🛍️ ហាងឌីជីថល", "🛍️ ហាង"):
-        livechat_users.discard(uid)
         bot.send_message(uid,
             "🛍️ <b>ហាងឌីជីថល</b>\n━━━━━━━━━━━━━━━━━━",
             parse_mode="HTML", reply_markup=products_kb()); return
 
     if text in ("💎 ថុបអាប់ហ្គេម", "💎 Game Top Up"):
-        livechat_users.discard(uid)
         bot.send_message(uid,
             "💎 <b>ថុបអាប់ហ្គេមទាំងអស់</b>\n━━━━━━━━━━━━━━━━━━\nជ្រើសរើសហ្គេមដែលអ្នកចង់ថុបអាប់៖",
             parse_mode="HTML", reply_markup=game_menu_kb())
         return
 
     if text in ("📊 SMM Services", "📊 សេវាកម្ម SMM", "📊 សេវា SMM"):
-        livechat_users.discard(uid)
         if not smm_services:
             bot.send_message(uid,
                 "❌ គ្មាន SMM Service ទេ\n(Admin ចូល ⚙️ កំណត់ SMM API ដើម្បី import)",
@@ -2637,7 +2583,6 @@ def handle(message):
             parse_mode="HTML", reply_markup=smm_cat_kb()); return
 
     if text in ("💳 ដាក់ប្រាក់", "💰 ដាក់ប្រាក់", "💰 Top Up", "💳 Top Up", "💸 បញ្ចូលលុយ"):
-        livechat_users.discard(uid)
         b = bal(uid)
         waiting.pop(uid, None)
         bot.send_message(uid,
@@ -2650,7 +2595,6 @@ def handle(message):
             reply_markup=deposit_amt_kb(uid)); return
 
     if text in ("📦 បញ្ជាទិញ", "📦 ការបញ្ជាទិញ", "📦 Orders"):
-        livechat_users.discard(uid)
         my_orders = {oid: o for oid, o in {**orders, **smm_orders}.items() if o.get("uid") == uid_str}
         if not my_orders:
             bot.send_message(uid,
@@ -2665,11 +2609,13 @@ def handle(message):
         bot.send_message(uid, "\n".join(lines), parse_mode="HTML", reply_markup=main_kb(uid)); return
 
     if text in ("💬 ជំនួយ Support", "💬 Support"):
-        livechat_users.add(uid)
-        bot.send_message(uid, t(uid, "support_msg"), parse_mode="HTML", reply_markup=main_kb(uid)); return
+        support_kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton("💬 ទំនាក់ទំនង Admin (@KhmerSmm005)", url="https://t.me/KhmerSmm005")]
+        ])
+        bot.send_message(uid, t(uid, "support_msg"), parse_mode="HTML", reply_markup=support_kb)
+        return
 
     if text in ("👜 កាបូបលុយ", "👜 Wallet"):
-        livechat_users.discard(uid)
         b = bal(uid)
         bot.send_message(uid,
             f"👜 <b>{'កាបូបលុយ' if lang=='kh' else 'My Wallet'}</b>\n"
@@ -2680,7 +2626,6 @@ def handle(message):
             parse_mode="HTML", reply_markup=main_kb(uid)); return
 
     if text in ("📜 ប្រវត្តិ", "📋 ប្រវត្តិ", "📜 History", "📋 History"):
-        livechat_users.discard(uid)
         my_orders = {oid: o for oid, o in {**orders, **smm_orders}.items()
                      if o.get("uid") == uid_str}
         if not my_orders:
@@ -2697,11 +2642,9 @@ def handle(message):
         bot.send_message(uid, "\n".join(lines)[:4000], parse_mode="HTML", reply_markup=main_kb(uid)); return
 
     if text in ("💡 របៀបប្រើប្រាស់", "💡 How to Use", "💡 របៀបប្រើ"):
-        livechat_users.discard(uid)
         bot.send_message(uid, t(uid, "how_to_use"), parse_mode="HTML", reply_markup=main_kb(uid)); return
 
     if text in ("🌐 ភូមិភាសា / Language", "🌐 ភាសា / Language", "🌐 Language"):
-        livechat_users.discard(uid)
         bot.send_message(uid, t(uid, "select_lang"),
                          parse_mode="HTML", reply_markup=lang_select_kb()); return
 
@@ -2795,6 +2738,10 @@ def restart():
         os.execv(sys.executable, [sys.executable] + sys.argv)
     threading.Thread(target=_restart, daemon=True).start()
     return jsonify({"status": "restarting", "message": "Bot is restarting..."})
+
+@flask_app.route("/broadcast_web", methods=["POST"])
+def broadcast_webmessages():
+    pass
 
 @flask_app.route("/broadcast_web", methods=["POST"])
 def broadcast_web():
