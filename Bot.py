@@ -208,7 +208,7 @@ http = _make_session()
 STRINGS = {
     "kh": {
         "welcome": (
-            "👋 សូស្ដីមក <b>Kairozen カイロゼン</b>!\n"
+            "👋 សួស្តី <b>{}</b> ស្វាគមន៍មកកាន់ <b>Kairozen カイロゼン</b>!\n"
             "━━━━━━━━━━━━━━━━━━\n"
             "🌟 Bot នេះផ្ដល់សេវាកម្ម:\n"
             "🛍️ ទិញផលិតផលឌីជីថល & Top Up Game\n"
@@ -251,7 +251,7 @@ STRINGS = {
     },
     "en": {
         "welcome": (
-            "👋 Welcome to <b>Kairozen カイロゼン</b>!\n"
+            "👋 Hello <b>{}</b>, welcome to <b>Kairozen カイロゼン</b>!\n"
             "━━━━━━━━━━━━━━━━━━\n"
             "🌟 Services available:\n"
             "🛍️ Buy Digital Products & Game Top Up\n"
@@ -878,12 +878,12 @@ def cmd_start(message):
             "🌐 <b>ជ្រើសរើសភាសា / Select Language</b>",
             parse_mode="HTML", reply_markup=lang_select_kb())
         return
-    _show_welcome(uid)
+    _show_welcome(uid, message.from_user.first_name or "User")
 
-def _show_welcome(uid):
+def _show_welcome(uid, name="User"):
     b = bal(uid)
     bot.send_message(uid,
-        t(uid, "welcome", b),
+        t(uid, "welcome", name, b),
         parse_mode="HTML",
         reply_markup=main_kb(uid))
 
@@ -896,7 +896,7 @@ def cb_setlang(call):
     bot.answer_callback_query(call.id, t(uid, "lang_set"))
     try: bot.delete_message(uid, call.message.message_id)
     except: pass
-    _show_welcome(uid)
+    _show_welcome(uid, call.from_user.first_name or "User")
 
 @bot.callback_query_handler(func=lambda c: c.data.startswith("poll:"))
 def cb_poll(call):
@@ -1620,7 +1620,7 @@ def cb_back(call):
     dest = call.data[5:]
     waiting.pop(uid, None)
     if dest == "main":
-        _show_welcome(uid)
+        _show_welcome(uid, call.from_user.first_name or "User")
     elif dest == "shop":
         bot.send_message(uid, "🛍️ <b>Shop</b>", parse_mode="HTML", reply_markup=products_kb())
     elif dest == "gamemenu":
