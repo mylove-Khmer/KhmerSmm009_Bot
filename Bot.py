@@ -75,7 +75,7 @@ from PIL import Image, ImageDraw, ImageFont
 # ═══════════════════════════════════════════════════════════
 #  CONFIG  — ដូរតម្លៃទាំងនេះ
 # ═══════════════════════════════════════════════════════════
-BOT_TOKEN          = "8614674554:AAF246KjPn9yPLEW4RQsJncS5MSRcje0qBY"
+BOT_TOKEN          = "8635907476:AAEMUF65TTPCPwgVo0IGLKmUKO1RMZb2b1s"
 ADMIN_ID           = 8807182741
 
 # Bakong KHQR (ដាក់ Token ពេញលេញពីអ៊ីមែលរបស់អ្នក)
@@ -95,7 +95,7 @@ WALLETS_FILE    = "aio_wallets.json"
 USERS_FILE      = "aio_users.json"
 LANG_FILE       = "aio_lang.json"
 SETTINGS_FILE   = "aio_settings.json"
-DISCOUNT_FILE   = "aio_discount.json"   # Global Discount File[cite: 1]
+DISCOUNT_FILE   = "aio_discount.json"
 
 PRODUCTS_FILE   = "aio_products.json"
 ORDERS_FILE     = "aio_orders.json"
@@ -142,7 +142,6 @@ smm_poll        = _load(SMM_POLL_FILE,  {"interval": POLL_INTERVAL})
 waiting         = {}   # uid -> step/dict
 lang_cooldown   = {}
 
-# Default products including Mobile Legends, Free Fire KH/SG, Roblox, and PUBG Mobile
 if not products:
     products = [
         {"id": "mobilelegends", "name": "Mobile Legends", "icon": "⚔️",
@@ -196,9 +195,6 @@ if not products:
     ]
     _save(PRODUCTS_FILE, products)
 
-# ═══════════════════════════════════════════════════════════
-#  BOT + HTTP
-# ═══════════════════════════════════════════════════════════
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode=None)
 
 def _make_session():
@@ -209,9 +205,6 @@ def _make_session():
     return s
 http = _make_session()
 
-# ═══════════════════════════════════════════════════════════
-#  LANGUAGE
-# ═══════════════════════════════════════════════════════════
 STRINGS = {
     "kh": {
         "welcome": (
@@ -243,10 +236,10 @@ STRINGS = {
         "how_to_use": (
             "💡 <b>របៀបប្រើប្រាស់</b>\n"
             "━━━━━━━━━━━━━━━━━━\n"
-            "1️⃣ ចុច <b>💳 ដាក់ប្រាក់</b> → ជ្រើស ចំនួន → ស្កេន QR តាម Bakong[cite: 1]\n"
-            "2️⃣ ចុច <b>🛍️ ហាងឌីជីថល</b> → ជ្រើស ផលិតផល → Plan → ទូទាត់[cite: 1]\n"
-            "3️⃣ ចុច <b>💎 ថុបអាប់ហ្គេម</b> → ជ្រើសហ្គេម និងកញ្ចប់ → បញ្ចូល ID[cite: 1]\n"
-            "4️⃣ ចុច <b>📊 សេវាកម្ម SMM</b> → Platform → សេវា → ចំនួន → ផ្ញើ Link[cite: 1]"
+            "1️⃣ ចុច <b>💳 ដាក់ប្រាក់</b> → ជ្រើស ចំនួន → ស្កេន QR តាម Bakong\n"
+            "2️⃣ ចុច <b>🛍️ ហាងឌីជីថល</b> → ជ្រើស ផលិតផល → Plan → ទូទាត់\n"
+            "3️⃣ ចុច <b>💎 ថុបអាប់ហ្គេម</b> → ជ្រើសហ្គេម និងកញ្ចប់ → បញ្ចូល ID\n"
+            "4️⃣ ចុច <b>📊 សេវាកម្ម SMM</b> → Platform → សេវា → ចំនួន → ផ្ញើ Link"
         ),
         "support_msg": (
             "💬 <b>ជំនួយ Support / ទំនាក់ទំនង Admin</b>\n"
@@ -286,10 +279,10 @@ STRINGS = {
         "how_to_use": (
             "💡 <b>How to Use</b>\n"
             "━━━━━━━━━━━━━━━━━━\n"
-            "1️⃣ Tap <b>💳 Top Up</b> → Choose Amount → Scan Bakong QR[cite: 1]\n"
-            "2️⃣ Tap <b>🛍️ Shop</b> → Choose Product → Plan → Pay[cite: 1]\n"
-            "3️⃣ Tap <b>💎 Game Top Up</b> → Choose Game/Package → Enter ID[cite: 1]\n"
-            "4️⃣ Tap <b>📊 SMM Services</b> → Platform → Service → Qty → Send Link[cite: 1]"
+            "1️⃣ Tap <b>💳 Top Up</b> → Choose Amount → Scan Bakong QR\n"
+            "2️⃣ Tap <b>🛍️ Shop</b> → Choose Product → Plan → Pay\n"
+            "3️⃣ Tap <b>💎 Game Top Up</b> → Choose Game/Package → Enter ID\n"
+            "4️⃣ Tap <b>📊 SMM Services</b> → Platform → Service → Qty → Send Link"
         ),
         "support_msg": (
             "💬 <b>Support / Contact Admin</b>\n"
@@ -323,9 +316,6 @@ def toggle_lang(uid):
 def lang_flag(uid):
     return {"kh": "🇰🇭 ខ្មែរ", "en": "🇬🇧 English"}.get(get_lang(uid), "🇰🇭")
 
-# ═══════════════════════════════════════════════════════════
-#  WALLET & DISCOUNT HELPERS
-# ═══════════════════════════════════════════════════════════
 def bal(uid): return float(wallets.get(str(uid), 0))
 def add_bal(uid, amt):
     wallets[str(uid)] = round(bal(uid) + amt, 2)
@@ -343,9 +333,6 @@ def _calc_discounted_price(price):
         return round(price * (1 - pct / 100), 2)
     return price
 
-# ═══════════════════════════════════════════════════════════
-#  KEYBOARDS
-# ═══════════════════════════════════════════════════════════
 def main_kb(uid=None):
     lang = get_lang(uid) if uid else "kh"
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -523,9 +510,6 @@ def plans_kb(prod_id):
     btns.append([InlineKeyboardButton("🔙 Back", callback_data="back:gamemenu" if prod_id in game_ids else "back:shop")])
     return InlineKeyboardMarkup(btns)
 
-# ═══════════════════════════════════════════════════════════
-#  PRODUCT HELPERS
-# ═══════════════════════════════════════════════════════════
 def _get_product(pid):
     for p in products:
         if p["id"] == pid: return p
@@ -561,9 +545,6 @@ def _pop_stock(pid, plan_idx=None):
     _save(STOCK_FILE, stock)
     return item
 
-# ═══════════════════════════════════════════════════════════
-#  SMM HELPERS
-# ═══════════════════════════════════════════════════════════
 def _smm_get_categories():
     cats = []
     for s in smm_services.values():
@@ -615,19 +596,6 @@ def _smm_clean_name(raw):
     raw = re.sub(r'\s*\(.*?\)\s*', ' ', raw)
     return re.sub(r'\s+', ' ', raw).strip()[:60]
 
-def _smm_service_list_text():
-    if not smm_services: return "❌ គ្មាន Service ទេ"
-    lines = ["<b>📋 SMM Services</b>\n━━━━━━━━━━━━━━━━━━"]
-    for cat in _smm_get_categories():
-        lines.append(f"\n📂 <b>{cat}</b>")
-        for slug, s in _smm_get_svcs_in_cat(cat):
-            sr = _smm_sell_rate(s["cost_rate"], slug)
-            lines.append(f"  • {s.get('label',slug)} — ${sr:.2f}/1K")
-    return "\n".join(lines)
-
-# ═══════════════════════════════════════════════════════════
-#  BAKONG KHQR & COUNTDOWN TIMER
-# ═══════════════════════════════════════════════════════════
 def _generate_khqr(uid, amount, note=""):
     try:
         from bakong_khqr import KHQR
@@ -821,9 +789,6 @@ def _send_deposit_qr(uid, amount, label="💳 ដាក់ប្រាក់"):
     threading.Thread(target=_watch_deposit,
                      args=(uid, uid_str, dep_id, amount, start_ts, sent_msg_id), daemon=True).start()
 
-# ═══════════════════════════════════════════════════════════
-#  ORDER HELPERS
-# ═══════════════════════════════════════════════════════════
 def _make_order_id():
     return f"KZ{int(time.time())%100000:05d}"
 
@@ -874,30 +839,6 @@ def _place_store_order(uid, prod_id, plan_idx):
             except: pass
     return oid, None
 
-def _place_smm_order(uid, slug, qty):
-    uid_str = str(uid)
-    s = smm_services.get(slug)
-    if not s: return None, "❌ Service រកមិនឃើញ"
-    sr    = _smm_sell_rate(s["cost_rate"], slug)
-    price = sr * qty / 1000
-    if bal(uid) < price: return None, f"❌ Balance មិនគ្រប់! (Balance: ${bal(uid):.2f})"
-    ded_bal(uid, price)
-    key = smm_api.get("key",""); url = smm_api.get("url","")
-    res = _smm_api_post({"key": key, "action": "add",
-                         "service": s["api_id"], "link": "pending", "quantity": qty})
-    api_order_id = str(res.get("order","")) if res else ""
-    oid = _make_order_id()
-    smm_orders[oid] = {
-        "uid": uid_str, "slug": slug, "label": s.get("label",slug),
-        "qty": qty, "price": price, "api_order_id": api_order_id,
-        "status": "pending", "ts": int(time.time()),
-    }
-    _save(SMM_ORD_FILE, smm_orders)
-    return oid, None
-
-# ═══════════════════════════════════════════════════════════
-#  TRACK USER
-# ═══════════════════════════════════════════════════════════
 def _track_user(message):
     uid = message.chat.id
     uid_str = str(uid)
@@ -914,9 +855,6 @@ def _track_user(message):
 def is_banned(uid):
     return bool(users_db.get(str(uid), {}).get("banned", False))
 
-# ═══════════════════════════════════════════════════════════
-#  START
-# ═══════════════════════════════════════════════════════════
 @bot.message_handler(commands=["start"])
 def cmd_start(message):
     uid = message.chat.id
@@ -949,9 +887,6 @@ def _show_welcome(uid):
         parse_mode="HTML",
         reply_markup=main_kb(uid))
 
-# ═══════════════════════════════════════════════════════════
-#  CALLBACKS
-# ═══════════════════════════════════════════════════════════
 @bot.callback_query_handler(func=lambda c: c.data.startswith("setlang:"))
 def cb_setlang(call):
     uid  = call.message.chat.id
@@ -1742,9 +1677,6 @@ def cb_useraction(call):
             f"💳 សាច់ប្រាក់: <b>${b:.2f}</b>\n━━━━━━━━━━━━━━━━━━\nផ្ញើ Amount $ ដក:",
             parse_mode="HTML", reply_markup=cancel_kb())
 
-# ═══════════════════════════════════════════════════════════
-#  MAIN MESSAGE HANDLER
-# ═══════════════════════════════════════════════════════════
 @bot.message_handler(func=lambda m: True)
 def handle(message):
     uid     = message.chat.id
@@ -1762,9 +1694,9 @@ def handle(message):
         kb = admin_kb() if uid == ADMIN_ID else main_kb(uid)
         bot.send_message(uid, t(uid, "cancel_ok"), reply_markup=kb); return
 
-    # ══════════════════════════════════════════════════════
-    #  ADMIN SECTION
-    # ══════════════════════════════════════════════════════
+    if uid == ADMIN_ID and step == "broadcast_msg":
+        _do_broadcast(uid, message); return
+
     if uid == ADMIN_ID:
 
         if text == "💎 គ្រប់គ្រងហ្គេម" or text == "✏️ កែតម្លៃហ្គេម":
@@ -1898,9 +1830,6 @@ def handle(message):
                 except: pass
             except: bot.send_message(uid, "❌ Amount ខុស!")
             return
-
-        if step == "broadcast_msg":
-            _do_broadcast(uid, message); return
 
         if isinstance(step, dict) and step.get("step") == "add_stock_items":
             pid      = step["pid"]
@@ -2368,10 +2297,6 @@ def handle(message):
 
         bot.send_message(uid, f"❓ ពាក្យបញ្ជាមិនស្គាល់។ ប្រើប៊ូតុង Menu ខាងក្រោម។", reply_markup=admin_kb()); return
 
-    # ══════════════════════════════════════════════════════
-    #  USER SECTION
-    # ══════════════════════════════════════════════════════
-
     if step == "dep_custom":
         try:
             amount = float(text.replace("$",""))
@@ -2556,8 +2481,14 @@ def handle(message):
             f"━━━━━━━━━━━━━━━━━━\n"
             f"💳 សាច់ប្រាក់: <b>${bal(uid):.2f}</b>",
             parse_mode="HTML", reply_markup=main_kb(uid))
-        try: bot.send_message(ADMIN_ID,
-            f"📊 <b>SMM Order</b>\n👤 <code>{uid_str}</code> | {s.get('label',slug)} | {qty:,} | ${price:.4f}", parse_mode="HTML")
+        try: 
+            bot.send_message(ADMIN_ID,
+                f"📊 <b>SMM Order</b>\n"
+                f"👤 User: <code>{uid_str}</code>\n"
+                f"📦 Service: {s.get('label',slug)}\n"
+                f"🔢 Qty: {qty:,} | 💰 ${price:.4f}\n"
+                f"🔗 Link: <code>{link}</code>", 
+                parse_mode="HTML")
         except: pass
         return
 
@@ -2650,39 +2581,6 @@ def handle(message):
 
     bot.send_message(uid, t(uid, "fallback"), reply_markup=main_kb(uid))
 
-# ═══════════════════════════════════════════════════════════
-#  BROADCAST
-# ═══════════════════════════════════════════════════════════
-def _do_broadcast(admin_uid, message):
-    waiting.pop(admin_uid, None)
-    sent = failed = 0
-    for u_id in list(users_db.keys()):
-        try:
-            if message.photo:
-                bot.send_photo(int(u_id), message.photo[-1].file_id, caption=message.caption or "")
-            elif message.video:
-                bot.send_video(int(u_id), message.video.file_id, caption=message.caption or "")
-            else:
-                bot.send_message(int(u_id), message.text or "", parse_mode="HTML")
-            sent += 1
-        except: failed += 1
-        time.sleep(0.05)
-    bot.send_message(admin_uid,
-        f"📢 <b>ផ្សព្វផ្សាយរួចរាល់!</b>\n✅ បានផ្ញើ: {sent} | ❌ បរាជ័យ: {failed}",
-        parse_mode="HTML", reply_markup=admin_kb())
-
-# ═══════════════════════════════════════════════════════════
-#  PHOTO HANDLER
-# ═══════════════════════════════════════════════════════════
-@bot.message_handler(content_types=["photo"])
-def handle_photo(message):
-    uid = message.chat.id
-    if uid == ADMIN_ID and waiting.get(uid) == "broadcast_msg":
-        _do_broadcast(uid, message); return
-
-# ═══════════════════════════════════════════════════════════
-#  FLASK CONTROL SERVER
-# ═══════════════════════════════════════════════════════════
 flask_app = Flask(__name__)
 CONTROL_KEY = "kairozen_secret_2025"
 
@@ -2740,10 +2638,6 @@ def restart():
     return jsonify({"status": "restarting", "message": "Bot is restarting..."})
 
 @flask_app.route("/broadcast_web", methods=["POST"])
-def broadcast_webmessages():
-    pass
-
-@flask_app.route("/broadcast_web", methods=["POST"])
 def broadcast_web():
     if not _check_key():
         return jsonify({"error": "Unauthorized"}), 403
@@ -2775,9 +2669,6 @@ def print_banner():
 """
     print(banner)
 
-# ═══════════════════════════════════════════════════════════
-#  MAIN
-# ═══════════════════════════════════════════════════════════
 if __name__ == "__main__":
     print_banner()
     logger.info(f"{CLR_BOLD}{CLR_GREEN}🚀 Kairozen All-in-One Bot v4 កំពុងចាប់ផ្ដើម...{CLR_RESET}")
