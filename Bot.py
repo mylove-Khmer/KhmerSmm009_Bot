@@ -75,7 +75,7 @@ from PIL import Image, ImageDraw, ImageFont
 # ═══════════════════════════════════════════════════════════
 #  CONFIG  — ដូរតម្លៃទាំងនេះ
 # ═══════════════════════════════════════════════════════════
-BOT_TOKEN          = "8614674554:AAF246KjPn9yPLEW4RQsJncS5MSRcje0qBY"
+BOT_TOKEN          = "8635907476:AAEMUF65TTPCPwgVo0IGLKmUKO1RMZb2b1s"
 ADMIN_ID           = 8807182741
 
 # Bakong KHQR (ដាក់ Token ពេញលេញពីអ៊ីមែលរបស់អ្នក)
@@ -1677,6 +1677,27 @@ def cb_useraction(call):
             f"💳 សាច់ប្រាក់: <b>${b:.2f}</b>\n━━━━━━━━━━━━━━━━━━\nផ្ញើ Amount $ ដក:",
             parse_mode="HTML", reply_markup=cancel_kb())
 
+def _do_broadcast(admin_uid, message):
+    waiting.pop(admin_uid, None)
+    sent = failed = 0
+    for u_id in list(users_db.keys()):
+        try:
+            if message.photo:
+                bot.send_photo(int(u_id), message.photo[-1].file_id, caption=message.caption or "", parse_mode="HTML")
+            elif message.video:
+                bot.send_video(int(u_id), message.video.file_id, caption=message.caption or "", parse_mode="HTML")
+            elif message.voice:
+                bot.send_voice(int(u_id), message.voice.file_id, caption=message.caption or "", parse_mode="HTML")
+            elif message.text:
+                bot.send_message(int(u_id), message.text, parse_mode="HTML")
+            sent += 1
+        except: 
+            failed += 1
+        time.sleep(0.05)
+    bot.send_message(admin_uid,
+        f"📢 <b>ផ្សព្វផ្សាយរួចរាល់!</b>\n✅ បានផ្ញើ: {sent} | ❌ បរាជ័យ: {failed}",
+        parse_mode="HTML", reply_markup=admin_kb())
+
 @bot.message_handler(func=lambda m: True)
 def handle(message):
     uid     = message.chat.id
@@ -1695,7 +1716,8 @@ def handle(message):
         bot.send_message(uid, t(uid, "cancel_ok"), reply_markup=kb); return
 
     if uid == ADMIN_ID and step == "broadcast_msg":
-        _do_broadcast(uid, message); return
+        _do_broadcast(uid, message)
+        return
 
     if uid == ADMIN_ID:
 
@@ -2211,7 +2233,7 @@ def handle(message):
         if text == "📢 ផ្សព្វផ្សាយ":
             waiting[uid] = "broadcast_msg"
             bot.send_message(uid,
-                "📢 <b>ផ្សព្វផ្សាយ</b>\nផ្ញើ Message (text/photo/video):",
+                "📢 <b>ផ្សព្វផ្សាយ</b>\nផ្ញើ Message (អក្សរ, រូបភាព, វីដេអូ ឬ សំឡេង):",
                 parse_mode="HTML", reply_markup=cancel_kb()); return
 
         if text == "💹 ប្រាក់ចំណេញ SMM":
