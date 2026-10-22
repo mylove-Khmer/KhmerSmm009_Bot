@@ -2881,7 +2881,7 @@ def handle(message):
         livechat_users.discard(uid)
         b = bal(uid)
         my_deps = [(k, v) for k, v in store_deps.items()
-                   if v.get("uid"] == uid_str]
+                   if v.get("uid") == uid_str]
         confirmed = sum(float(v.get("amount",0)) for _, v in my_deps if v.get("status")=="confirmed")
         pending   = sum(float(v.get("amount",0)) for _, v in my_deps if v.get("status")=="pending")
         bot.send_message(uid,
@@ -2950,4 +2950,104 @@ def _do_broadcast(admin_uid, message):
 def handle_photo(message):
     uid = message.chat.id
     if uid == ADMIN_ID and waiting.get(uid) == "broadcast_msg":
-        _do_broadcast(uid, message
+        _do_broadcast(uid, message); return
+
+# ═══════════════════════════════════════════════════════════
+#  FLASK CONTROL SERVER
+# ═══════════════════════════════════════════════════════════
+flask_app = Flask(__name__)
+CONTROL_KEY = "kairozen_secret_2025"
+
+def _check_key():
+    key = flask_request.args.get("key") or (flask_request.get_json(silent=True) or {}).get("key")
+    return key == CONTROL_KEY
+
+@flask_app.route("/health")
+def health():
+    return jsonify({"status": "running", "bot": "Kairozen v4"})
+
+@flask_app.route("/status")
+def status():
+    if not _check_key():
+        return jsonify({"error": "Unauthorized"}), 403
+    return jsonify({
+        "status": "running",
+        "users": len(users_db),
+        "orders": len(orders) + len(smm_orders),
+        "wallets": len(wallets),
+    })
+
+@flask_app.route("/shutdown", methods=["GET", "POST"])
+def shutdown():
+    if not _check_key():
+        return jsonify({"error": "Unauthorized — wrong key"}), 403
+    logger.warning(f"{CLR_RED}🛑 Shutdown requested via control server!{CLR_RESET}")
+    try:
+        bot.send_message(ADMIN_ID, "🛑 <b>Bot កំពុងបិទ...</b>\nបានទទួល shutdown command តាម Control Server។", parse_mode="HTML")
+        time.sleep(1)
+    except: pass
+    def _stop():
+        time.sleep(0.5)
+        bot.stop_polling()
+        time.sleep(1)
+        os._exit(0)
+    threading.Thread(target=_stop, daemon=True).start()
+    return jsonify({"status": "shutting_down", "message": "Bot is stopping..."})
+
+@flask_app.route("/restart", methods=["GET", "POST"])
+def restart():
+    if not _check_key():
+        return jsonify({"error": "Unauthorized — wrong key"}), 403
+    logger.warning(f"{CLR_YELLOW}🔄 Restart requested via control server!{CLR_RESET}")
+    try:
+        bot.send_message(ADMIN_ID, "🔄 <b>Bot កំពុង Restart...</b>\nបានទទួល restart command តាម Control Server។", parse_mode="HTML")
+        time.sleep(1)
+    except: pass
+    def _restart():
+        time.sleep(0.5)
+        bot.stop_polling()
+        time.sleep(1)
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+    threading.Thread(target=_restart, daemon=True).start()
+    return jsonify({"status": "restarting", "message": "Bot is restarting..."})
+
+@flask_app.route("/broadcast_web", methods=["POST"])
+def broadcast_web():
+    if not _check_key():
+        return jsonify({"error": "Unauthorized"}), 403
+    data = flask_request.get_json(silent=True) / {}
+    text = data.get("text", "").strip()
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+    sent = failed = 0
+    for u_id in list(users_db.keys()):
+        try:
+            bot.send_message(int(u_id), text, parse_mode="HTML")
+            sent += 1
+        except: failed += 1
+        time.sleep(0.05)
+    return jsonify({"sent": sent, "failed": failed})
+
+def run_flask():
+    logger.info(f"{CLR_CYAN}🌐 Control Server running on port 5055{CLR_RESET}")
+    flask_app.run(host="0.0.0.0", port=5055, debug=False, use_reloader=False)
+
+def print_banner():
+    banner = f"""
+{CLR_CYAN}{CLR_BOLD}╔══════════════════════════════════════════════════════════════╗
+║     {CLR_GREEN}Kairozen All-in-One Bot v4 — カイロゼン                  {CLR_CYAN}║
+║     {CLR_YELLOW}ហាង + SMM Panel · ដាក់លុយ KHQR · Top Up Game Menu       {CLR_CYAN}║
+║     {CLR_MAGENTA}Global Discount · Panel Admin · Promo Code              {CLR_CYAN}║
+║     {CLR_WHITE}Compatible: Python 3.10+ · Termux / Pydroid 3         {CLR_CYAN}║
+╚══════════════════════════════════════════════════════════════╝{CLR_RESET}
+"""
+    print(banner)
+
+# ═══════════════════════════════════════════════════════════
+#  MAIN
+# ═══════════════════════════════════════════════════════════
+if __name__ == "__main__":
+    print_banner()
+    logger.info(f"{CLR_BOLD}{CLR_GREEN}🚀 Kairozen All-in-One Bot v4 កំពុងចាប់ផ្ដើម...{CLR_RESET}")
+    threading.Thread(target=run_flask, daemon=True).start()
+    bot.infinity_polling(timeout=20, long_polling_timeout=15)
