@@ -1682,21 +1682,33 @@ def _do_broadcast(admin_uid, message):
     sent = failed = 0
     for u_id in list(users_db.keys()):
         try:
+            target_id = int(u_id)
             if message.photo:
-                bot.send_photo(int(u_id), message.photo[-1].file_id, caption=message.caption or "", parse_mode="HTML")
+                bot.send_photo(target_id, message.photo[-1].file_id, caption=message.caption or "", parse_mode="HTML")
             elif message.video:
-                bot.send_video(int(u_id), message.video.file_id, caption=message.caption or "", parse_mode="HTML")
+                bot.send_video(target_id, message.video.file_id, caption=message.caption or "", parse_mode="HTML")
             elif message.voice:
-                bot.send_voice(int(u_id), message.voice.file_id, caption=message.caption or "", parse_mode="HTML")
+                bot.send_voice(target_id, message.voice.file_id, caption=message.caption or "", parse_mode="HTML")
+            elif message.audio:
+                bot.send_audio(target_id, message.audio.file_id, caption=message.caption or "", parse_mode="HTML")
+            elif message.document:
+                bot.send_document(target_id, message.document.file_id, caption=message.caption or "", parse_mode="HTML")
             elif message.text:
-                bot.send_message(int(u_id), message.text, parse_mode="HTML")
+                bot.send_message(target_id, message.text, parse_mode="HTML")
             sent += 1
-        except: 
+        except Exception as e: 
             failed += 1
         time.sleep(0.05)
     bot.send_message(admin_uid,
-        f"📢 <b>ផ្សព្វផ្សាយរួចរាល់!</b>\n✅ បានផ្ញើ: {sent} | ❌ បរាជ័យ: {failed}",
+        f"📢 <b>ផ្សព្វផ្សាយជូនភ្ញៀវរួចរាល់!</b>\n✅ បានផ្ញើជោគជ័យ: {sent}\n❌ បរាជ័យ: {failed}",
         parse_mode="HTML", reply_markup=admin_kb())
+
+@bot.message_handler(content_types=["photo", "video", "voice", "audio", "document"])
+def handle_media_broadcast(message):
+    uid = message.chat.id
+    if uid == ADMIN_ID and waiting.get(uid) == "broadcast_msg":
+        _do_broadcast(uid, message)
+        return
 
 @bot.message_handler(func=lambda m: True)
 def handle(message):
